@@ -2,12 +2,27 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
+import { HashRouter, Route, Switch } from "react-router-dom";
 import * as serviceWorker from './serviceWorker';
+import Amplify from "aws-amplify";
+import awsExports from "./aws-exports";
+import SignUp from './screens/Signup';
+import Login from './screens/Login/index';
+import Todo from './screens/Todo/index';
+import AuthProvider from './AuthContext';
+Amplify.configure(awsExports);
 
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <HashRouter>
+  <Switch>
+    <Route exact path="/" component={App} />
+    <Route exact path="/signup" component={SignUp} />
+    <AuthProvider>
+    <Route exact path="/login" component={Login} />
+    <Route exact path="/todo" component={Todo} />
+    </AuthProvider>
+  </Switch>
+</HashRouter>,
   document.getElementById('root')
 );
 
