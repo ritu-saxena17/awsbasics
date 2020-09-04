@@ -51,6 +51,7 @@ import { AuthContext } from '../../AuthContext';
      }
  
     return (
+        <div className={clsx(classes.div)}>
         <Card className={clsx(classes.card)} p={2}>
              <Box margin={4}>
              <Dialog open={open}
@@ -109,6 +110,7 @@ import { AuthContext } from '../../AuthContext';
             </Grid>
             </Box>
         </Card>
+        </div>
     )
 }
 export default SignUp

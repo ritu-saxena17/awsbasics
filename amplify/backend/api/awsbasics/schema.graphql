@@ -1,6 +1,35 @@
-type Todo @model {
-  id: ID!
-  name: String!
-  description: String
-  completed:Boolean!
+#item and seller have 1 to many relationship
+#type and item have 1 to many relationship
+#type and seller has many to many relationship
+
+type Item @model{
+  id:ID!
+  name:String!
+  description:String
+  country:String!
+  cost:Int!
+  type:Type! @connection(name:"Type")
+  sellers:[Seller]! @connection(name:"ItemSeller")
 }
+
+type Seller @model{
+  id:ID!
+  name:String!
+  location:String
+  item: Item! @connection(name:"ItemSeller")
+  type:[ItemTypeSeller]! @connection(name:"SellerType")
+}
+
+type ItemTypeSeller @model (queries:null){
+  id:ID!
+  seller: Seller! @connection(name:"SellerType")
+  type:Type! @connection(name:"TypeSeller")
+}
+
+type Type @model {
+  id:ID!
+  name:String!
+  items:[Item]! @connection(name:"Type")
+  seller:[ItemTypeSeller]! @connection(name:"TypeSeller")
+}
+

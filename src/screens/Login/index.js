@@ -12,33 +12,28 @@ import { AuthContext } from '../../AuthContext';
  function Login() {
     const classes = useStyles();
     const history=useHistory();
-    const [username, setUsername] = useContext(AuthContext)
+    const [username, setUsername] = React.useState("");
     const [password, setPassword] = React.useState("");
-    async function Signin(){
+    const [email, setEmail] =useContext(AuthContext)
+    async function Signin(event){
+        event.preventDefault()
         console.log('here')
         try {
             const user = await Auth.signIn(username, password);
-            history.push("/todo")
-            console.log('successful',user)
+            setEmail(user.attributes.email)
+            user==null?alert('Something went wrong'): history.push({pathname:'/home/'+username,} );
+            console.log('successful',user.attributes.email)
         } catch (error) {
             console.log('error signing in', error);
         }
      }
  
     return (
+        <div className={clsx(classes.div)}>
         <Card className={clsx(classes.card)} p={2}>
              <Box margin={4}>
             <Grid container direction={"column"} spacing={3}>
                 <Typography>Sigin to your account</Typography>
-                {/* <Grid item>
-                <TextFields
-                    label="Enter your email"
-                    field="email"
-                    value={email}
-                    onChange={(event) => {
-                    setEmail(event.target.value);
-                }}/>
-                </Grid> */}
                 <Grid item>
                  <TextFields
                     label="Enter your username"
@@ -61,13 +56,14 @@ import { AuthContext } from '../../AuthContext';
                 <div style={{direction:'row', display:'flex'}}>
                     <Typography variant='body2' className={clsx(classes.text)}>New user?</Typography>
                     <Typography variant='body2' className={clsx(classes.hypertext)} onClick={()=>history.push("/signup")}>Sigup</Typography>
-                    <Button style={{padding:'2%', marginLeft:'3%', backgroundColor:'#dea710', width:'35%'}} variant="contained" onClick={Signin}
+                    <Button style={{padding:'2%', marginLeft:'3%', backgroundColor:'#dea710', width:'35%'}} variant="contained" onClick={(event)=>Signin(event)}
               >Signin</Button>
                 </div>
                </Grid>
             </Grid>
             </Box>
         </Card>
+        </div>
     )
 }
 export default Login

@@ -8,8 +8,8 @@ import Amplify from "aws-amplify";
 import awsExports from "./aws-exports";
 import SignUp from './screens/Signup';
 import Login from './screens/Login/index';
-import Todo from './screens/Todo/index';
 import AuthProvider from './AuthContext';
+import HomePage from './screens/HomePage';
 Amplify.configure(awsExports);
 
 ReactDOM.render(
@@ -19,7 +19,7 @@ ReactDOM.render(
     <Route exact path="/signup" component={SignUp} />
     <AuthProvider>
     <Route exact path="/login" component={Login} />
-    <Route exact path="/todo" component={Todo} />
+    <Route exact path="/home/:user/" component={HomePage} />
     </AuthProvider>
   </Switch>
 </HashRouter>,
