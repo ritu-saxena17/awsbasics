@@ -23,8 +23,8 @@ export const useStyles = makeStyles((theme) => ({
     paper1:{
         marginTop:'7%',
         marginLeft:'1%',
-        width:'20%',
-        height:900,
+        // width:'20%',
+        // height:900,
         
     },
     paper2:{
@@ -55,10 +55,18 @@ export const useStyles = makeStyles((theme) => ({
     },
     paper4:{
         marginTop:'2%',
-        width:300,
-        height:480,
+        width:400,
+        height:620,
         justifyContent: 'space-evenly'
-    }, expand: {
+    },
+    image:{
+        alignItems: 'center',
+        justifyContent: 'center',   
+        display: 'flex',
+        width:300,
+        height:200,
+    },
+     expand: {
         transform: 'rotate(0deg)',
         marginLeft: 'auto',
         transition: theme.transitions.create('transform', {
@@ -68,4 +76,5 @@ export const useStyles = makeStyles((theme) => ({
       expandOpen: {
         transform: 'rotate(180deg)',
       },
+
 }))

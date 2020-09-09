@@ -16,10 +16,10 @@ ReactDOM.render(
   <HashRouter>
   <Switch>
     <Route exact path="/" component={App} />
-    <Route exact path="/signup" component={SignUp} />
+    <Route  path="/signup" component={SignUp} />
     <AuthProvider>
-    <Route exact path="/login" component={Login} />
-    <Route exact path="/home/:user/" component={HomePage} />
+    <Route  path="/login" component={Login} />
+    <Route  path="/home/:user/" component={HomePage} />
     </AuthProvider>
   </Switch>
 </HashRouter>,

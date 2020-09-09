@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { Typography, Box, Toolbar, Dialog, DialogTitle, DialogContent, Button, Paper, Grid, FormControl, FormControlLabel, FormGroup, Checkbox, FormLabel, Grow, Card, CardContent, CardActions, IconButton, Collapse } from '@material-ui/core'
+import { Typography, Box, Toolbar, Dialog, DialogTitle, DialogContent, Button, Paper, Grid, FormControl, FormControlLabel, FormGroup, Checkbox, FormLabel, Grow, Card, CardContent, CardActions, IconButton, Collapse, CardMedia } from '@material-ui/core'
 import { AuthContext } from '../../AuthContext';
+import { Storage } from 'aws-amplify';
 import { useStyles } from "./styles";
 import SelectTextField from "../components/SelectTextField";
 import ReorderIcon from '@material-ui/icons/Reorder';
@@ -16,6 +17,7 @@ import { getType, getItem, listItems, listTypes } from '../../graphql/queries';
 import { graphqlOperation, API } from 'aws-amplify';
 import ShareIcon from '@material-ui/icons/Share';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import { onCreateItem } from '../../graphql/subscriptions';
 function HomePage() {
 const initialState = { name:''}
 const [itemTypeState, setItemTypeState] = React.useState(initialState)
@@ -31,6 +33,7 @@ const [choice,setChoice]=React.useState('');
 const [isChecked, setIsChecked] = useState([]);
 const classes=useStyles();
 const [key,setKey]=useState('')
+const [awsImage, setAwsImage] = React.useState([]);
 const [cart,setCart]=useState(0);
 const dialogs={ first:false, second:false, third:false }
 const [open, setOpen] = React.useState(dialogs);
@@ -49,14 +52,33 @@ const [email, setEmail]=useContext(AuthContext)
         if(key==='third'){
         try{
           setCommonState({ ...commonState, ['itemTypeSellerSellerId']: id})
-          console.log('common here',commonState)
-          await API.graphql(graphqlOperation(createItemTypeSeller, {input: commonState})).then((type)=>{
+         await API.graphql(graphqlOperation(createItemTypeSeller, {input: commonState})).then((type)=>{
             console.log('final id',type);
           })
         }catch(error){
         console.log(error);
       }
       }
+      };
+      const handleUploadClick = (e) => {
+        if (e.target.files[0]) {
+          const image = e.target.files[0];
+          Storage.put(sellerState.sellerItemId+'.png', image, {
+            contentType: 'image/png'
+        })
+        .then (result => {
+          Storage.get(result + '.png')
+          .then((url) => {
+            // console.log('result is',result);
+            const image=awsImage
+            image.push(url)
+            setAwsImage(image)
+            console.log('image inserted',awsImage)
+            } )
+          .catch(err => console.log(err));
+         })
+        .catch(err => console.log(err));
+        }
       };
      function setInput1(key, value) {
       setItemTypeState({ ...itemTypeState, [key]: value })
@@ -69,13 +91,33 @@ const [email, setEmail]=useContext(AuthContext)
           }
       async function fetchData() {
         try{
+          console.log('use effect 1');
+          const images=[]
            const todoData = await API.graphql(graphqlOperation(listTypes))
            const list = todoData.data.listTypes.items
            setData(list)
            const items = await API.graphql(graphqlOperation(listItems))
-           console.log('list is',items.data.listItems.items)
-            setItem(items.data.listItems.items)
-           console.log('data is',item)
+           const list1=items.data.listItems.items;
+           list1.map((item,index)=>{
+            Storage.get(item.id + '.png')
+            .then((result) => {
+              // console.log('result is',result);
+              images.push(result)
+              } )
+            .catch(err => console.log(err));
+           })
+           setAwsImage(images);
+          setItem(list1)
+          console.log('got list1',item);
+          let subscriber;
+          subscriber = API.graphql(graphqlOperation(onCreateItem)).subscribe({
+            next: (data) => {console.log('subscribe',data.value.data.onCreateItem)
+            list1.push(data.value.data.onCreateItem)
+            setItem(list1)
+            // console.log('itemmmmm',item);
+          }
+          });
+          return () => subscriber.unsubscribe()
         }
         catch(e){
           console.log('ERROR is',e)
@@ -84,9 +126,13 @@ const [email, setEmail]=useContext(AuthContext)
     useEffect(() => {
             fetchData()
         }, []);
+
     useEffect(()=>{
+      console.log('use effect 2');
+      console.log('got list 2',item);
       setCart(isChecked.length)
     },[isChecked])
+
     async function addItemType(key){
       console.log('clicked',type[itemTypeState.name-1].name)
       try{
@@ -105,21 +151,17 @@ const [email, setEmail]=useContext(AuthContext)
         }  
     }
     async function addItem(key){
-      console.log('clicked',type[itemTypeState])
       try{
       await API.graphql(graphqlOperation(createItem, {input: itemState})).then((type)=>{
-          setItem([...item, type.data.createItem])
-          console.log('hsh',type.data.createItem);
+          //setItem([...item, type.data.createItem])
           setCommonState({ ...commonState, ['itemTypeSellerTypeId']: itemState.itemTypeId})
-          console.log('common',commonState)
           setSellerState({...sellerState,[key]:type.data.createItem.id})
-          console.log('item',sellerState)
           setItemState(initialState1)
           handleDialogClose('second')
           handleDialogOpen('third')
         })
         } catch (err) {
-          console.log('error creating todo:', err)
+          console.log('error creating list:', err)
         }
       
     }
@@ -127,7 +169,6 @@ const [email, setEmail]=useContext(AuthContext)
       try {
      await API.graphql(graphqlOperation(createSeller, {input: sellerState})).then((type)=>{
       setCommonState({ ...commonState, ['itemTypeSellerSellerId']: type.data.createSeller.id})
-          console.log('hsh common 1',commonState);
           handleDialogClose('third',type.data.createSeller.id)
           handleDialogClose('second')
           handleDialogClose('first')
@@ -135,16 +176,14 @@ const [email, setEmail]=useContext(AuthContext)
         })
       }
          catch (err) {
-          console.log('error creating todo:', err)
+          console.log('error creating list:', err)
         }
       
     }
     function GetTypeItem(){
-      console.log('item',item)
        return(
         data.map((item,index)=>{
           const name=item.name
-          console.log('item name',choice);
           return(
             <Grid item xs={3} key={index} >
               <FormControl>
@@ -167,9 +206,7 @@ const [email, setEmail]=useContext(AuthContext)
       )
     }
     function addToTheCart(id){
-      console.log('button id',id)
     if (isChecked.includes(id)) {
-      console.log('inclided');
       const newList = isChecked.filter((item) => item !== id);
       setIsChecked(newList);
       setCart(isChecked.length)
@@ -180,9 +217,9 @@ const [email, setEmail]=useContext(AuthContext)
     setCart(isChecked.length)
     }
     //setCart(isChecked.length)
-      console.log('button',isChecked)
     }
-    function GetItemsData(){
+     function GetItemsData(){
+      console.log('here images',awsImage );
       let id;
       type.map((item,index)=>{
         if(item.name===key)
@@ -190,7 +227,6 @@ const [email, setEmail]=useContext(AuthContext)
       })
      return(
        item.map((item,index)=>{
-         console.log('shx',item.id);
         if(item.type.id===id){
           var country=item.country;
           var cost=Intl.NumberFormat('en-IN', {
@@ -204,11 +240,14 @@ const [email, setEmail]=useContext(AuthContext)
                     <Typography color="textSecondary" >Item</Typography>
                     <Typography ccomponent="h2" style={{fontWeight: 'bold',fontSize:20}}>{item.name}</Typography>
                     <br/>
+                    <CardMedia>
+                      <img src={awsImage[index]} className={clsx(classes.image)}/>
+                    </CardMedia>
                     <Typography color="textSecondary" >Description</Typography>
                     <Typography variant="body2" component="p">{item.description}</Typography>
                     <br/>
                     <Typography variant='h6'>Best Price: {cost}</Typography>
-          <Typography>Made in: {country} <ReactCountryFlag countryCode={country.substring(0,2)} style={{
+                    <Typography>Made in: {country} <ReactCountryFlag countryCode={country.substring(0,2)} style={{
                     fontSize: '2em',
                     lineHeight: '2em',
                 }}/></Typography>
@@ -222,6 +261,9 @@ const [email, setEmail]=useContext(AuthContext)
         }
        })
      )
+    }
+    function deleteData(){
+      
     }
     return (
         <div>
@@ -285,6 +327,12 @@ const [email, setEmail]=useContext(AuthContext)
             onClose={event=>handleDialogClose('third')}>
             <DialogTitle>Enter the description</DialogTitle>
             <DialogContent>
+            <input
+            accept="image/*"
+            type="file"
+             multiple
+             onChange={handleUploadClick}
+            />
             <TextFields
                     value={sellerState.name}
                     type='text'
@@ -299,16 +347,15 @@ const [email, setEmail]=useContext(AuthContext)
               >Confirm</Button>
             </DialogContent>
             </Dialog>
-            <Box className={clsx(classes.box1)}>
+            <div className={clsx(classes.box1)}>
               <Paper elevation={0} className={clsx(classes.paper1)}>
                 <GetTypeItem/>
               </Paper>
               {key ?
               <div className={clsx(classes.paper2)}>
-                <Paper elevation={3} className={clsx(classes.paper2)}>  <GetItemsData/> </Paper>
+                <Paper elevation={3} className={clsx(classes.paper2)} onClick={deleteData()}>  <GetItemsData/> </Paper>
               </div>:<Paper elevation={3} className={clsx(classes.paper3)}><Typography variant={"h3"}>Check the item Type to see the items</Typography></Paper>}
-             
-            </Box>
+            </div>
         </div>
     )
 }
